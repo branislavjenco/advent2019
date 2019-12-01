@@ -1,14 +1,20 @@
 import math
 
 def file_into_list(filename, map_f=lambda x: x):
+    """
+    Reads a file's lines into a Python list. Can supply optional
+    mapping function which is applied to every line
+    """
     with open(filename, encoding="utf-8") as file:
         L = [map_f(line.strip()) for line in file]
         return L
 
 def get_fuel_from_mass(mass):
+    """ As defined in part 1 """
     return max((mass // 3) - 2, 0)
 
 def get_fuel_from_mass_advanced(mass):
+    """ As defined in part 2 """
     remaining_mass = get_fuel_from_mass(mass)
     total = remaining_mass 
     while remaining_mass > 0:
@@ -17,6 +23,7 @@ def get_fuel_from_mass_advanced(mass):
     return total
 
 def test(func, inputs, expected):
+    """ Test a pure function on list of inputs and compare with list of expected outputs """
     if len(inputs) != len(expected):
         raise Exception("need the same number of inputs and outputs in test function")
 
