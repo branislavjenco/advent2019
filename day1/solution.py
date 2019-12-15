@@ -1,13 +1,5 @@
 import math
-
-def file_into_list(filename, map_f=lambda x: x):
-    """
-    Reads a file's lines into a Python list. Can supply optional
-    mapping function which is applied to every line
-    """
-    with open(filename, encoding="utf-8") as file:
-        L = [map_f(line.strip()) for line in file]
-        return L
+from utils import file_into_list, test
 
 def get_fuel_from_mass(mass):
     """ As defined in part 1 """
@@ -22,23 +14,13 @@ def get_fuel_from_mass_advanced(mass):
         total += remaining_mass
     return total
 
-def test(func, inputs, expected):
-    """ Test a pure function on list of inputs and compare with list of expected outputs """
-    if len(inputs) != len(expected):
-        raise Exception("need the same number of inputs and outputs in test function")
-
-    for input, expected in zip(inputs, expected):
-        result = func(input)
-        if result != expected:
-            raise Exception("Wrong result on input %d. Expected %d, got %d" % (input, expected, result))
-
 def test_part_1():
     test(get_fuel_from_mass, [12, 14, 1969, 100756], [2, 2, 654, 33583])
 
 def test_part_2():
     test(get_fuel_from_mass_advanced, [14, 1969, 100756], [2, 966, 50346])
 
-module_masses = file_into_list("input.txt", map_f=lambda x: int(x))
+module_masses = file_into_list("day1/input.txt", map_f=lambda x: int(x))
 module_fuels_part1 = [get_fuel_from_mass(m) for m in module_masses]
 module_fuels_part2 = [get_fuel_from_mass_advanced(m) for m in module_masses]
 
