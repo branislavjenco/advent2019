@@ -38,12 +38,15 @@ def get_param(ins, program, ic, index):
         return program[ic + index]
 
 
-def run(program, input, debug=False):
+def run(program, inputs, debug=False):
     """
     Runs an intcode program
     program is a list of ints
     """
-    ic = 0 # instruction counter
+    if not isinstance(inputs, list):
+        inputs = [inputs]
+    ic = 0  # instruction counter
+    input_counter = 0
     output = None
     while True:
         ins = program[ic]
@@ -54,37 +57,113 @@ def run(program, input, debug=False):
             return output
         if op == 1:
             program[program[ic + 3]] = get_param(ins, program, ic, 1) + get_param(ins, program, ic, 2)
-            ic = ic + 4
+            ic += 4
         elif op == 2:
             program[program[ic + 3]] = get_param(ins, program, ic, 1) * get_param(ins, program, ic, 2)
-            ic = ic + 4
+            ic += 4
         elif op == 3:
-            program[program[ic + 1]] = input
-            ic = ic + 2
+            program[program[ic + 1]] = inputs[input_counter]
+            input_counter += 1
+            ic += 2
         elif op == 4:
             output = get_param(ins, program, ic, 1)
-            ic = ic + 2
+            ic += 2
         elif op == 5:
             if get_param(ins, program, ic, 1) != 0:
                 ic = get_param(ins, program, ic, 2)
             else:
-                ic = ic + 3
+                ic += 3
         elif op == 6:
             if get_param(ins, program, ic, 1) == 0:
                 ic = get_param(ins, program, ic, 2)
             else:
-                ic = ic + 3
+                ic += 3
         elif op == 7:
             if get_param(ins, program, ic, 1) < get_param(ins, program, ic, 2):
                 program[program[ic + 3]] = 1
             else:
                 program[program[ic + 3]] = 0
-            ic = ic + 4
+            ic += 4
         elif op == 8:
             if get_param(ins, program, ic, 1) == get_param(ins, program, ic, 2):
                 program[program[ic + 3]] = 1
             else:
                 program[program[ic + 3]] = 0
-            ic = ic + 4
+            ic += 4
         else:
             raise Exception("shouldn't happen")
+
+
+def load_intcode(filename):
+    return list(map(lambda x: int(x), file_into_list(filename, lambda x: x.split(","))[0]))
+
+
+class IntcodeComputer:
+    program = []
+    instruction_counter = 0
+
+    def __init__(self, program):
+        self.program = program[:]
+
+    def run(self, _input):
+        output = None
+        used_input = False
+        ic = self.instruction_counter
+        while True:
+            ins = self.program[ic]
+            op = ins % 100
+            if op == 99:
+                break
+            if op == 1:
+                self.program[self.program[ic + 3]] = get_param(ins, self.program, ic, 1) + get_param(ins, self.program, ic, 2)
+                ic += 4
+            elif op == 2:
+                self.program[self.program[ic + 3]] = get_param(ins, self.program, ic, 1) * get_param(ins, self.program, ic, 2)
+                ic += 4
+            elif op == 3:
+                if not used_input:
+                    self.program[self.program[ic + 1]] = _input
+                    ic += 2
+                    used_input = True
+                else:
+                    break
+            elif op == 4:
+                output = get_param(ins, self.program, ic, 1)
+                ic += 2
+                break
+            elif op == 5:
+                if get_param(ins, self.program, ic, 1) != 0:
+                    ic = get_param(ins, self.program, ic, 2)
+                else:
+                    ic += 3
+            elif op == 6:
+                if get_param(ins, self.program, ic, 1) == 0:
+                    ic = get_param(ins, self.program, ic, 2)
+                else:
+                    ic += 3
+            elif op == 7:
+                if get_param(ins, self.program, ic, 1) < get_param(ins, self.program, ic, 2):
+                    self.program[self.program[ic + 3]] = 1
+                else:
+                    self.program[self.program[ic + 3]] = 0
+                ic += 4
+            elif op == 8:
+                if get_param(ins, self.program, ic, 1) == get_param(ins, self.program, ic, 2):
+                    self.program[self.program[ic + 3]] = 1
+                else:
+                    self.program[self.program[ic + 3]] = 0
+                ic += 4
+            else:
+                raise Exception("shouldn't happen")
+        self.instruction_counter = ic
+        return output
+
+    def is_halted(self):
+        return self.program[self.instruction_counter] == 99
+
+
+def log(debug):
+    def _log(*args):
+        if debug:
+            print(*args)
+    return _log

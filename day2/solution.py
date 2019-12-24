@@ -1,7 +1,6 @@
-from utils import test, file_into_list
+from utils import test, load_intcode
 
-program = list(map(lambda x: int(x), file_into_list("day2/input.txt", lambda x: x.split(","))[0]))
-
+program = load_intcode("day2/input.txt")
 
 
 def run(program):
@@ -22,14 +21,17 @@ def run(program):
         else:
             raise Exception("shouldn't happen")
 
+
 def test_part_1():
     test(run, [[1,0,0,0,99], [2,3,0,3,99], [2,4,4,5,99,0], [1,1,1,4,99,5,6,0,99]], [[2,0,0,0,99], [2,3,0,6,99], [2,4,4,5,99,9801], [30,1,1,4,2,5,6,0,99]])
+
 
 def solve_part_1(program):
     program[1] = 12
     program[2] = 2
     result = run(program)
     print(result[0])
+
 
 def solve_part_2(initial_program):
     for noun in range(100):

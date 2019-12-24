@@ -61,17 +61,20 @@ def add_coords(path, direction, count):
             path.append((last_coord[0], last_coord[1] - 1))
     return path
 
+
 def parse_step(step):
     direction = step[0]
     count = int(step[1:])
     return direction, count
-    
+
+
 def get_path(wire):
     path = [(0, 0)]
     for step in wire:
         direction, count = parse_step(step)
         path = add_coords(path, direction, count)
     return path
+
 
 def part_1(wires):
     wire1, wire2 = wires
@@ -85,8 +88,10 @@ def part_1(wires):
 def test_part_1():
     test(part_1, [(['R8','U5','L5','D3'], ['U7','R6','D4','L4']),(['R75','D30','R83','U83','L12','D49','R71','U7','L72'], ['U62','R66','U55','R34','D71','R55','D58','R83']), (['R98','U47','R26','D63','R33','U87','L62','D20','R33','U53','R51'], ['U98','R91','D20','R16','D67','R40','U7','R15','U6','R7'])], [6, 159, 135])
 
+
 test_part_1()
 print(part_1((wire1, wire2)))
+
 
 def part_2(wires):
     wire1, wire2 = wires
@@ -95,8 +100,10 @@ def part_2(wires):
     cross_points_with_sums = intersection_with_sums_fast(path1, path2)
     return min(filter(lambda x: x != 0, map(lambda x: x[1], cross_points_with_sums)))
 
+
 def test_part_2():
     test(part_2, [(['R8','U5','L5','D3'], ['U7','R6','D4','L4']),(['R75','D30','R83','U83','L12','D49','R71','U7','L72'], ['U62','R66','U55','R34','D71','R55','D58','R83']), (['R98','U47','R26','D63','R33','U87','L62','D20','R33','U53','R51'], ['U98','R91','D20','R16','D67','R40','U7','R15','U6','R7'])], [30, 610, 410])
+
 
 test_part_2()
 print(part_2((wire1, wire2)))
