@@ -100,66 +100,87 @@ def load_intcode(filename):
 
 class IntcodeComputer:
     program = []
-    instruction_counter = 0
+    ic = 0
+    relative_base = 0
+
+    @property
+    def ins(self):
+        return self.program[self.ic]
 
     def __init__(self, program):
-        self.program = program[:]
+        self.program = program[:] + [0]*100000
 
-    def run(self, _input):
+    def get_param(self, offset, write=False):
+        mode = get_param_mode(offset, self.ins)
+        value = None
+        if mode == 0:
+            value = self.program[self.ic + offset]
+        elif mode == 1:
+            value = self.ic + offset
+        elif mode == 2:
+            value = self.relative_base + self.program[self.ic + offset]
+
+        if write:
+            return value
+        else:
+            return self.program[value]
+
+    def run(self, _input=None):
         output = None
         used_input = False
-        ic = self.instruction_counter
         while True:
-            ins = self.program[ic]
-            op = ins % 100
+            op = self.ins % 100
+            print(self.ins, self.relative_base)
             if op == 99:
                 break
             if op == 1:
-                self.program[self.program[ic + 3]] = get_param(ins, self.program, ic, 1) + get_param(ins, self.program, ic, 2)
-                ic += 4
+                self.program[self.get_param(3, write=True)] = self.get_param(1) + self.get_param(2)
+                self.ic += 4
             elif op == 2:
-                self.program[self.program[ic + 3]] = get_param(ins, self.program, ic, 1) * get_param(ins, self.program, ic, 2)
-                ic += 4
+                self.program[self.get_param(3, write=True)] = self.get_param(1) * self.get_param(2)
+                self.ic += 4
             elif op == 3:
                 if not used_input:
-                    self.program[self.program[ic + 1]] = _input
-                    ic += 2
+                    self.program[self.get_param(1, write=True)] = _input
+                    self.ic += 2
                     used_input = True
                 else:
                     break
             elif op == 4:
-                output = get_param(ins, self.program, ic, 1)
-                ic += 2
+                output = self.get_param(1)
+                self.ic += 2
                 break
             elif op == 5:
-                if get_param(ins, self.program, ic, 1) != 0:
-                    ic = get_param(ins, self.program, ic, 2)
+                if self.get_param(1) != 0:
+                    self.ic = self.get_param(2)
                 else:
-                    ic += 3
+                    self.ic += 3
             elif op == 6:
-                if get_param(ins, self.program, ic, 1) == 0:
-                    ic = get_param(ins, self.program, ic, 2)
+                if self.get_param(1) == 0:
+                    self.ic = self.get_param(2)
                 else:
-                    ic += 3
+                    self.ic += 3
             elif op == 7:
-                if get_param(ins, self.program, ic, 1) < get_param(ins, self.program, ic, 2):
-                    self.program[self.program[ic + 3]] = 1
+                if self.get_param(1) < self.get_param(2):
+                    self.program[self.get_param(3, write=True)] = 1
                 else:
-                    self.program[self.program[ic + 3]] = 0
-                ic += 4
+                    self.program[self.get_param(3, write=True)] = 0
+                self.ic += 4
             elif op == 8:
-                if get_param(ins, self.program, ic, 1) == get_param(ins, self.program, ic, 2):
-                    self.program[self.program[ic + 3]] = 1
+                if self.get_param(1) == self.get_param(2):
+                    self.program[self.get_param(3, write=True)] = 1
                 else:
-                    self.program[self.program[ic + 3]] = 0
-                ic += 4
+                    self.program[self.get_param(3, write=True)] = 0
+                self.ic += 4
+            elif op == 9:
+                self.relative_base = self.relative_base + self.get_param(1)
+                self.ic += 2
             else:
                 raise Exception("shouldn't happen")
-        self.instruction_counter = ic
         return output
 
     def is_halted(self):
-        return self.program[self.instruction_counter] == 99
+        return self.program[self.ic] == 99
 
 
 def log(debug):
