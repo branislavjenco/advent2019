@@ -130,7 +130,6 @@ class IntcodeComputer:
         used_input = False
         while True:
             op = self.ins % 100
-            print(self.ins, self.relative_base)
             if op == 99:
                 break
             if op == 1:
