@@ -7,6 +7,17 @@ def file_into_list(filename, map_f=lambda x: x):
     L = [map_f(line.strip()) for line in file]
     return L
 
+
+def file_into_string(filename):
+    """
+    Reads file into a single string
+    :param filename:
+    :return: string
+    """
+    with open(filename, encoding="utf-8") as file:
+        return file.read()
+
+
 def test(func, inputs, expected):
     """ Test a pure function on list of inputs and compare with list of expected outputs """
     if len(inputs) != len(expected):
