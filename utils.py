@@ -1,3 +1,8 @@
+import sys
+import numpy as np
+
+np.set_printoptions(threshold=sys.maxsize)
+
 def file_into_list(filename, map_f=lambda x: x):
   """
   Reads a file's lines into a Python list. Can supply optional
@@ -198,3 +203,14 @@ def log(debug):
         if debug:
             print(*args)
     return _log
+
+
+def print_mat(mat):
+    mat = mat.T
+    buffer = ""
+    sys.stdout.write(len(mat[0]) * "\033[A\r")
+    for i in range(len(mat)):
+        for j in range(len(mat[0])):
+            buffer = buffer + str(mat[i, j])
+        buffer = buffer + "\n"
+    sys.stdout.write(buffer)

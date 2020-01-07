@@ -1,22 +1,10 @@
-from utils import load_intcode, IntcodeComputer
-import os
+from utils import load_intcode, IntcodeComputer, print_mat
 import numpy as np
-import time
 import sys
 np.set_printoptions(threshold=sys.maxsize)
 
 _input = load_intcode("day13/input.txt")
 
-
-def show_screen(mat):
-    mat = mat.T
-    buffer = ""
-    sys.stdout.write( 22 * "\033[A\r")
-    for i in range(len(mat)):
-        for j in range(len(mat[0])):
-            buffer = buffer + str(mat[i, j])
-        buffer = buffer + "\n"
-    sys.stdout.write(buffer)
 
 def setup_game(screen, computer, joystick=None):
     while not computer.is_halted():
@@ -102,7 +90,7 @@ def step_game(computer, screen, joystick, score):
         score = tile_id
     else:
         screen[x, y] = tile_id
-    show_screen(screen)
+    print_mat(screen)
     return computer, screen, joystick, score
 
 
