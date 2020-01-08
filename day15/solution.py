@@ -5,6 +5,13 @@ import random
 import numpy as np
 
 program = load_intcode("day15/input.txt")
+DEBUG = False
+
+
+def log(*args, **kwargs):
+    if DEBUG and DEBUG is True:
+        print(*args, **kwargs)
+
 
 north = 1
 south = 2
@@ -17,9 +24,11 @@ wall = 0
 space = 1
 oxygen_system = 2
 
-start_mark = 7
 unknown_mark = 0
 space_mark = 1
+visited_space_mark = 6
+current_pos_mark = 7
+dead_end_mark = 3
 wall_mark = 4
 oxygen_system_mark = 2
 
@@ -46,9 +55,9 @@ def dir_of(dir, pos):
     elif dir == south:
         return south_of(pos)
     elif dir == west:
-        return east_of(pos)
-    elif dir == east:
         return west_of(pos)
+    elif dir == east:
+        return east_of(pos)
 
 
 def opposite_of(dir):
@@ -73,14 +82,14 @@ class State:
         self.prev_res = space
         self.cmd = north
         self.prev_cmd = north
-
-        self.room[self.pos[0], self.pos[1]] = start_mark
         self.target_pos = [self.start_pos[0] - 12, self.start_pos[1] - 12]
+        self.unvisited_spaces = []
 
     def __repr__(self):
         return f"""Pos:{self.pos}
 Cmd:{self.cmd}
-Res:{self.res}"""
+Res:{self.res}
+PathLen: {len(prune_path(self.path))}"""
 
 
 def get_pixel_neighbourhood(pos, room):
@@ -96,43 +105,50 @@ def get_pixel_neighbourhood(pos, room):
 def find_empty_positions(neighborhood):
     result = []
     for k, v in neighborhood.items():
-        if v == unknown_mark:
+        if v == space_mark or v == unknown_mark:
             result.append(k)
     return result
 
 
-# def new_pos_to_cmd(old_pos, new_pos):
-#     cmd = -1
-#     if new_pos == [old_pos[0], old_pos[1] - 1]:
-#         cmd = north
-#     elif new_pos == [old_pos[0], old_pos[1] + 1]:
-#         cmd = south
-#     elif new_pos == [old_pos[0] - 1, old_pos[1]]:
-#         cmd = west
-#     elif new_pos == [old_pos[0] + 1, old_pos[1]]:
-#         cmd = east
-#     return cmd
+def find_visited_positions(neighborhood):
+    result = []
+    for k, v in neighborhood.items():
+        if v == visited_space_mark:
+            result.append(k)
+    return result
 
 
-def get_ideal_direction(curr_pos, target_pos):
+def get_ideal_direction(state):
     choices = []
-    if curr_pos[0] > target_pos[0]:
+    if state.pos[0] > state.target_pos[0]:
         choices.append(west)
-    elif curr_pos[0] < target_pos[0]:
+    elif state.pos[0] < state.target_pos[0]:
         choices.append(east)
-    if curr_pos[1] > target_pos[1]:
+    if state.pos[1] > state.target_pos[1]:
         choices.append(north)
-    elif curr_pos[1] < target_pos[1]:
+    elif state.pos[1] < state.target_pos[1]:
         choices.append(south)
     return random.choice(choices)
 
 
 def set_command(state):
-
-    cmd = get_ideal_direction(state.pos, state.target_pos)
+    log("Getting command")
+    cmd = get_ideal_direction(state)
+    log("Ideal direction:", cmd)
     potential_position = dir_of(cmd, state.pos)
-    if state.room[tuple(potential_position)] == wall_mark:
-        cmd = random.choice(directions.difference({cmd}))
+    if state.room[tuple(potential_position)] in [wall_mark, dead_end_mark, visited_space_mark]:
+        log("Ideal direction is a wall or dead end")
+        n = get_pixel_neighbourhood(state.pos, state.room)
+        other_potential_directions = find_empty_positions(n)
+        if len(other_potential_directions) == 0:
+            log("Backtracking", n)
+            other_potential_directions = find_visited_positions(n)
+
+        log("Other potential directions", other_potential_directions)
+        if state.cmd in other_potential_directions:
+            cmd = state.cmd
+        else:
+            cmd = random.choice(other_potential_directions)
     #
     # n = get_pixel_neighbourhood(state.pos, state.room)
     # empty_positions_cmds = find_empty_positions(n)
@@ -154,19 +170,23 @@ def set_command(state):
     #             break
     #         if state.room[potential_position[0], potential_position[1]] != 4:
     #             break
+    log("Final direction:", cmd)
     state.cmd = cmd
     return state
 
 
 def signal_robot(state, remote_control):
+    log("Signalling robot with", state.cmd)
     response = remote_control.run(state.cmd)
+    log("Robot response", response)
     state.res = response
     return state
 
 
 def sync_position(state):
+    log("Syncing position")
     if state.res == space or state.res == oxygen_system:
-        new_pos = get_new_position(state.pos, state.cmd)
+        new_pos = dir_of(state.cmd, state.pos)
         state.prev_pos = state.pos
         state.pos = new_pos
         state.path.append(state.prev_pos)
@@ -174,7 +194,10 @@ def sync_position(state):
 
 
 def map_neighbourhood(state, remote_control):
+    log("Mapping neighbourhood")
     current_neighbourhood = get_pixel_neighbourhood(state.pos, state.room)
+    log(state.pos)
+    log("Current neighbourhood", current_neighbourhood)
     for direction, value in current_neighbourhood.items():
         if value == unknown_mark:
             res = remote_control.run(direction)
@@ -185,35 +208,87 @@ def map_neighbourhood(state, remote_control):
                 state.room[tuple(dir_of(direction, state.pos))] = wall_mark
             elif res == oxygen_system:
                 state.room[tuple(dir_of(direction, state.pos))] = oxygen_system_mark
+                remote_control.run(opposite_of(direction))
+    if state.room[tuple(state.pos) == unknown_mark]:
+        state.room[tuple(state.pos)] = space_mark
+
+    log("Mapped neighbourhood", get_pixel_neighbourhood(state.pos, state.room))
     return state
 
 
 def reveal_room(state):
-    if state.res == space:
-        state.room[state.pos[0], state.pos[1]] = 2
-        state.room[state.prev_pos[0], state.prev_pos[1]] = 1
-    elif state.res == wall:
-        wall_position = get_new_position(state.pos, state.cmd)
-        state.room[wall_position[0], wall_position[1]] = 4
+    log("Adding visited/deadend marks")
+    state.room[state.pos[0], state.pos[1]] = current_pos_mark
+    prev_n = get_pixel_neighbourhood(state.prev_pos, state.room)
+    if len(list(filter(lambda x: x == wall_mark or x == dead_end_mark, prev_n.values()))) > 2:
+        state.room[state.prev_pos[0], state.prev_pos[1]] = dead_end_mark
+    else:
+        state.room[state.prev_pos[0], state.prev_pos[1]] = visited_space_mark
     return state
+
+
+def prune_path(path):
+    pruned_path = set()
+    tuple_path = map(tuple, path)
+    for point in tuple_path:
+        if point not in pruned_path:
+            pruned_path.add(point)
+        else:
+            pruned_path.remove(point)
+    return pruned_path
 
 
 def part_1():
     remote_control = IntcodeComputer(program)
-    state = State(50)
+    state = State(42)
     while True:
+        log("=======Starting iteration=======")
+        print_mat(state.room, [state.res, state.cmd, get_pixel_neighbourhood(state.pos, state.room)])
+        # time.sleep(2)
         state = map_neighbourhood(state, remote_control)
+        # print_mat(state.room)
+        # time.sleep(2)
         state = set_command(state)
         state = signal_robot(state, remote_control)
         state = sync_position(state)
+        # print_mat(state.room)
+        # time.sleep(2)
         state = reveal_room(state)
+        # print_mat(state.room)
         # print(state)
-        print_mat(state.room)
-        # time.sleep(0.4)
+        # time.sleep(0.1)
         if state.res == 2:
             break
-    state.room[state.start_pos[0], state.start_pos[1]] = 7
+    state.room[state.start_pos[0], state.start_pos[1]] = current_pos_mark
     print(state)
 
 
-part_1()
+# part_1()
+
+
+def part_2():
+    remote_control = IntcodeComputer(program)
+    state = State(42)
+
+    while True:
+        log("=======Starting iteration=======")
+        print_mat(state.room, [state.res, state.cmd, get_pixel_neighbourhood(state.pos, state.room)])
+        # time.sleep(2)
+        state = map_neighbourhood(state, remote_control)
+        # print_mat(state.room)
+        # time.sleep(2)
+        state = set_command(state)
+        state = signal_robot(state, remote_control)
+        state = sync_position(state)
+        # print_mat(state.room)
+        # time.sleep(2)
+        state = reveal_room(state)
+        # print_mat(state.room)
+        # print(state)
+        # time.sleep(0.1)
+        if state.res == 2:
+            break
+    state.room[state.start_pos[0], state.start_pos[1]] = current_pos_mark
+    print(state)
+
+part_2()

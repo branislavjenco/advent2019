@@ -205,12 +205,24 @@ def log(debug):
     return _log
 
 
-def print_mat(mat):
+def print_mat(mat, additional=""):
     mat = mat.T
     buffer = ""
     sys.stdout.write(len(mat[0]) * "\033[A\r")
     for i in range(len(mat)):
         for j in range(len(mat[0])):
-            buffer = buffer + str(mat[i, j])
+            buffer = buffer + map_to_char(mat[i, j])
         buffer = buffer + "\n"
+    buffer = buffer + str(additional)
     sys.stdout.write(buffer)
+
+
+def map_to_char(x):
+    if x == 0:
+        return " "
+    elif x == 4:
+        return "▪"
+    elif x == 3:
+        return "▫"
+    else:
+        return str(x)
