@@ -83,7 +83,7 @@ class State:
         self.cmd = north
         self.prev_cmd = north
         self.target_pos = [self.start_pos[0] - 12, self.start_pos[1] - 12]
-        self.unvisited_spaces = []
+        self.unvisited_spaces = set()
 
     def __repr__(self):
         return f"""Pos:{self.pos}
@@ -149,27 +149,6 @@ def set_command(state):
             cmd = state.cmd
         else:
             cmd = random.choice(other_potential_directions)
-    #
-    # n = get_pixel_neighbourhood(state.pos, state.room)
-    # empty_positions_cmds = find_empty_positions(n)
-    # if len(empty_positions_cmds) > 0:
-    #     if north in empty_positions_cmds and east in empty_positions_cmds:
-    #         cmd = random.choice([north, west])
-    #     else:
-    #         cmd = random.choice(empty_positions_cmds)
-    # else:
-    #     while True:
-    #         cmd = get_ideal_direction(state.pos, state.target_pos)
-    #         potential_position = dir_of(state.pos, cmd)
-    #         if state.room[potential_position[0], potential_position[1]] == 0:
-    #             break
-    #
-    #         cmd = random.choice([east, south])
-    #         potential_position = dir_of(state.pos, cmd)
-    #         if state.room[potential_position[0], potential_position[1]] == 0:
-    #             break
-    #         if state.room[potential_position[0], potential_position[1]] != 4:
-    #             break
     log("Final direction:", cmd)
     state.cmd = cmd
     return state
@@ -190,6 +169,9 @@ def sync_position(state):
         state.prev_pos = state.pos
         state.pos = new_pos
         state.path.append(state.prev_pos)
+        tuple_pos = tuple(state.pos)
+        if tuple_pos in state.unvisited_spaces:
+            state.unvisited_spaces.remove(tuple_pos)
     return state
 
 
@@ -204,6 +186,7 @@ def map_neighbourhood(state, remote_control):
             if res == space:
                 state.room[tuple(dir_of(direction, state.pos))] = space_mark
                 remote_control.run(opposite_of(direction))
+                state.unvisited_spaces.add(tuple(dir_of(direction, state.pos)))
             elif res == wall:
                 state.room[tuple(dir_of(direction, state.pos))] = wall_mark
             elif res == oxygen_system:
@@ -269,7 +252,7 @@ def part_1():
 def part_2():
     remote_control = IntcodeComputer(program)
     state = State(42)
-
+    stop_flag = False
     while True:
         log("=======Starting iteration=======")
         print_mat(state.room, [state.res, state.cmd, get_pixel_neighbourhood(state.pos, state.room)])
@@ -286,8 +269,8 @@ def part_2():
         # print_mat(state.room)
         # print(state)
         # time.sleep(0.1)
-        if state.res == 2:
-            break
+
+
     state.room[state.start_pos[0], state.start_pos[1]] = current_pos_mark
     print(state)
 

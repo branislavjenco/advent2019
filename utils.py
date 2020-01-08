@@ -3,24 +3,25 @@ import numpy as np
 
 np.set_printoptions(threshold=sys.maxsize)
 
+
 def file_into_list(filename, map_f=lambda x: x):
-  """
-  Reads a file's lines into a Python list. Can supply optional
-  mapping function which is applied to every line
-  """
-  with open(filename, encoding="utf-8") as file:
-    L = [map_f(line.strip()) for line in file]
+    """
+    Reads a file's lines into a Python list. Can supply optional
+    mapping function which is applied to every line
+    """
+    with open(filename, encoding="utf-8") as file:
+        L = [map_f(line.strip()) for line in file]
     return L
 
 
-def file_into_string(filename):
+def file_into_string(filename, map_f=lambda x: x):
     """
     Reads file into a single string
     :param filename:
     :return: string
     """
     with open(filename, encoding="utf-8") as file:
-        return file.read()
+        return map_f(file.read())
 
 
 def test(func, inputs, expected):
