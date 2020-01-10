@@ -206,13 +206,17 @@ def log(debug):
     return _log
 
 
-def print_mat(mat, additional=""):
-    mat = mat.T
+def print_mat(mat, additional="", use_ascii=False, transpose=True):
+    if transpose:
+        mat = mat.T
     buffer = ""
     sys.stdout.write(len(mat[0]) * "\033[A\r")
     for i in range(len(mat)):
         for j in range(len(mat[0])):
-            buffer = buffer + map_to_char(mat[i, j])
+            if use_ascii:
+                buffer = buffer + chr(mat[i, j])
+            else:
+                buffer = buffer + map_to_char(mat[i, j])
         buffer = buffer + "\n"
     buffer = buffer + str(additional)
     sys.stdout.write(buffer)
